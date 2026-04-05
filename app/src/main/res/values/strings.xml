@@ -16,6 +16,10 @@
     <string name="show_grouped_calls">Show grouped calls</string>
     <string name="clear_call_history">Clear call history</string>
     <string name="show_call_details">Show call details</string>
+    <string name="private_call_history_protected">Private call history protection is enabled.</string>
+    <string name="no_private_calls_to_migrate">No private-contact calls were found in the system call log.</string>
+    <string name="migrating_private_calls">Moving private-contact calls into protected history…</string>
+    <string name="migrate_private_calls_success">%1$d private-contact calls moved into protected history.</string>
 
     <!-- Dialpad -->
     <string name="dialpad">Dialpad</string>
@@ -83,6 +87,9 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
     <string name="calling_accounts">Calling accounts</string>
+    <string name="protect_private_call_history">Store private-contact calls only inside Fossify Phone</string>
+    <string name="migrate_private_calls">Move old private-contact calls into protected history</string>
+    <string name="migrate_private_calls_confirmation">This moves call history entries linked to your private contacts out of the system call log and stores them only inside Fossify Phone. Continue?</string>
 
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>

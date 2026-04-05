@@ -5,9 +5,14 @@
     android:id="@+id/item_recents_holder"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/tiny_margin"
+    android:layout_marginBottom="@dimen/tiny_margin"
+    android:background="@drawable/phone_card_background_ripple"
     android:clickable="true"
     android:focusable="true"
+    android:paddingStart="@dimen/activity_margin"
     android:paddingTop="@dimen/medium_margin"
+    android:paddingEnd="@dimen/activity_margin"
     android:paddingBottom="@dimen/medium_margin">
 
     <ImageView
@@ -15,7 +20,6 @@
         android:layout_width="@dimen/normal_icon_size"
         android:layout_height="@dimen/normal_icon_size"
         android:layout_centerVertical="true"
-        android:layout_marginStart="@dimen/normal_margin"
         android:layout_marginEnd="@dimen/small_margin"
         android:padding="@dimen/small_margin"
         android:src="@drawable/ic_person_vector"

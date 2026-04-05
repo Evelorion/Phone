@@ -6,12 +6,14 @@ import android.content.Context
 import android.provider.CallLog.Calls
 import android.provider.CallLog.Calls.PRESENTATION_UNAVAILABLE
 import android.provider.CallLog.Calls.PRESENTATION_UNKNOWN
+import android.telecom.Call
 import android.telephony.PhoneNumberUtils
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.contacts.Contact
 import org.fossify.phone.R
 import org.fossify.phone.activities.SimpleActivity
+import org.fossify.phone.extensions.config
 import org.fossify.phone.extensions.getAvailableSIMCardLabels
 import org.fossify.phone.models.RecentCall
 import org.fossify.phone.models.SIMAccount
@@ -19,58 +21,36 @@ import org.fossify.phone.models.SIMAccount
 class RecentsHelper(private val context: Context) {
     companion object {
         private const val COMPARABLE_PHONE_NUMBER_LENGTH = 9
+        private const val PRIVATE_CALL_LOOKBACK_MS = 10 * 60 * 1000L
+        private const val PRIVATE_CALL_QUERY_LIMIT = 20
         const val QUERY_LIMIT = 100
     }
 
     private val contentUri = Calls.CONTENT_URI
-    private var queryLimit = QUERY_LIMIT
+    private val privateCallHistoryStore = PrivateCallHistoryStore(context)
 
+    @Suppress("UNUSED_PARAMETER")
     fun getRecentCalls(
         previousRecents: List<RecentCall> = ArrayList(),
         queryLimit: Int = QUERY_LIMIT,
         callback: (List<RecentCall>) -> Unit,
     ) {
-        val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
+        val privateCalls = privateCallHistoryStore.getCalls()
+            .sortedByDescending { it.startTS }
+
         if (!context.hasPermission(PERMISSION_READ_CALL_LOG)) {
-            callback(ArrayList())
+            callback(privateCalls.take(queryLimit))
             return
         }
 
-        ContactsHelper(context).getContacts(getAll = true, showOnlyContactsWithNumbers = true) { contacts ->
+        getContactsWithPrivate(showOnlyContactsWithNumbers = true) { contacts, _ ->
             ensureBackgroundThread {
-                val privateContacts = MyContactsContentProvider.getContacts(context, privateCursor)
-                if (privateContacts.isNotEmpty()) {
-                    contacts.addAll(privateContacts)
-                }
+                val recentCalls = (getRecents(contacts = contacts, maxResults = queryLimit) + privateCalls)
+                    .sortedByDescending { it.startTS }
+                    .distinctBy { it.id }
+                    .take(queryLimit)
 
-                this.queryLimit = queryLimit
-                val recentCalls = if (previousRecents.isNotEmpty()) {
-                    val previousRecentCalls = previousRecents
-                        .flatMap { it.groupedCalls ?: listOf(it) }
-                        .map { it.copy(groupedCalls = null) }
-
-                    val newerRecents = getRecents(
-                        contacts = contacts,
-                        selection = "${Calls.DATE} > ?",
-                        selectionParams = arrayOf("${previousRecentCalls.first().startTS}")
-                    )
-
-                    val olderRecents = getRecents(
-                        contacts = contacts,
-                        selection = "${Calls.DATE} < ?",
-                        selectionParams = arrayOf("${previousRecentCalls.last().startTS}")
-                    )
-
-                    newerRecents + previousRecentCalls + olderRecents
-                } else {
-                    getRecents(contacts)
-                }
-
-                callback(
-                    recentCalls
-                        .sortedByDescending { it.startTS }
-                        .distinctBy { it.id }
-                )
+                callback(recentCalls)
             }
         }
     }
@@ -87,6 +67,111 @@ class RecentsHelper(private val context: Context) {
         }
     }
 
+    fun protectPrivateCallHistory(call: Call) {
+        val number = call.details.handle?.schemeSpecificPart
+        if (!context.config.privateCallHistoryProtectionEnabled || number.isNullOrBlank()) {
+            return
+        }
+
+        if (!context.hasPermission(PERMISSION_READ_CALL_LOG) || !context.hasPermission(PERMISSION_WRITE_CALL_LOG)) {
+            return
+        }
+
+        protectPrivateCallHistory(number, System.currentTimeMillis() - PRIVATE_CALL_LOOKBACK_MS)
+    }
+
+    fun protectPrivateCallHistory(number: String) {
+        if (!context.config.privateCallHistoryProtectionEnabled || number.isBlank()) {
+            return
+        }
+
+        if (!context.hasPermission(PERMISSION_READ_CALL_LOG) || !context.hasPermission(PERMISSION_WRITE_CALL_LOG)) {
+            return
+        }
+
+        protectPrivateCallHistory(number, System.currentTimeMillis() - PRIVATE_CALL_LOOKBACK_MS)
+    }
+
+    fun migratePrivateCallsToProtectedStorage(activity: SimpleActivity, callback: (protectedCalls: Int) -> Unit) {
+        activity.handlePermission(PERMISSION_READ_CALL_LOG) { readGranted ->
+            if (!readGranted) {
+                return@handlePermission
+            }
+
+            activity.handlePermission(PERMISSION_WRITE_CALL_LOG) { writeGranted ->
+                if (!writeGranted) {
+                    return@handlePermission
+                }
+
+                getContactsWithPrivate(showOnlyContactsWithNumbers = true) { contacts, privateContacts ->
+                    ensureBackgroundThread {
+                        if (privateContacts.isEmpty()) {
+                            callback(0)
+                            return@ensureBackgroundThread
+                        }
+
+                        val matchingCalls = getRecents(
+                            contacts = contacts,
+                            maxResults = Int.MAX_VALUE,
+                            filterBlockedNumbers = false
+                        ).filter { recentCall ->
+                            privateContacts.any { it.doesContainPhoneNumber(recentCall.phoneNumber) }
+                        }
+
+                        if (matchingCalls.isEmpty()) {
+                            callback(0)
+                            return@ensureBackgroundThread
+                        }
+
+                        privateCallHistoryStore.addCalls(matchingCalls)
+                        removeSystemRecentCallsByIds(matchingCalls.map { it.id })
+                        activity.config.privateCallHistoryProtectionEnabled = true
+                        callback(matchingCalls.size)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun protectPrivateCallHistory(number: String, dateThreshold: Long) {
+        getContactsWithPrivate(showOnlyContactsWithNumbers = true) { contacts, privateContacts ->
+            ensureBackgroundThread {
+                if (privateContacts.none { it.doesContainPhoneNumber(number) }) {
+                    return@ensureBackgroundThread
+                }
+
+                val matchingCall = getRecents(
+                    contacts = contacts,
+                    selection = "${Calls.DATE} >= ?",
+                    selectionParams = arrayOf(dateThreshold.toString()),
+                    maxResults = PRIVATE_CALL_QUERY_LIMIT,
+                    filterBlockedNumbers = false
+                ).firstOrNull { samePhoneNumber(it.phoneNumber, number) }
+
+                if (matchingCall != null) {
+                    privateCallHistoryStore.addCalls(listOf(matchingCall))
+                    removeSystemRecentCallsByIds(listOf(matchingCall.id))
+                }
+            }
+        }
+    }
+
+    private fun getContactsWithPrivate(
+        showOnlyContactsWithNumbers: Boolean,
+        callback: (contacts: ArrayList<Contact>, privateContacts: ArrayList<Contact>) -> Unit
+    ) {
+        val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = showOnlyContactsWithNumbers)
+        ContactsHelper(context).getContacts(getAll = true, showOnlyContactsWithNumbers = showOnlyContactsWithNumbers) { contacts ->
+            ensureBackgroundThread {
+                val privateContacts = MyContactsContentProvider.getContacts(context, privateCursor)
+                if (privateContacts.isNotEmpty()) {
+                    contacts.addAll(privateContacts)
+                }
+                callback(contacts, privateContacts)
+            }
+        }
+    }
+
     private fun shouldGroupCalls(callA: RecentCall, callB: RecentCall): Boolean {
         val differentSim = callA.simID != callB.simID
         val differentDay = callA.dayCode != callB.dayCode
@@ -97,8 +182,7 @@ class RecentsHelper(private val context: Context) {
 
         if (differentSim || differentDay || namesAreBothRealAndDifferent) return false
 
-        @Suppress("DEPRECATION")
-        return PhoneNumberUtils.compare(callA.phoneNumber, callB.phoneNumber)
+        return samePhoneNumber(callA.phoneNumber, callB.phoneNumber)
     }
 
     private fun groupSubsequentCalls(calls: List<RecentCall>): List<RecentCall> {
@@ -129,6 +213,8 @@ class RecentsHelper(private val context: Context) {
         contacts: List<Contact>,
         selection: String? = null,
         selectionParams: Array<String>? = null,
+        maxResults: Int = QUERY_LIMIT,
+        filterBlockedNumbers: Boolean = true,
     ): List<RecentCall> {
         val recentCalls = mutableListOf<RecentCall>()
         var previousStartTS = 0L
@@ -155,12 +241,12 @@ class RecentsHelper(private val context: Context) {
         val cursor = if (isNougatPlus()) {
             // https://issuetracker.google.com/issues/175198972?pli=1#comment6
             val limitedUri = contentUri.buildUpon()
-                .appendQueryParameter(Calls.LIMIT_PARAM_KEY, queryLimit.toString())
+                .appendQueryParameter(Calls.LIMIT_PARAM_KEY, maxResults.toString())
                 .build()
             val sortOrder = "${Calls.DATE} DESC"
             context.contentResolver.query(limitedUri, projection, selection, selectionParams, sortOrder)
         } else {
-            val sortOrder = "${Calls.DATE} DESC LIMIT $queryLimit"
+            val sortOrder = "${Calls.DATE} DESC LIMIT $maxResults"
             context.contentResolver.query(contentUri, projection, selection, selectionParams, sortOrder)
         }
 
@@ -275,43 +361,82 @@ class RecentsHelper(private val context: Context) {
                         isUnknownNumber = isUnknownNumber
                     )
                 )
-            } while (cursor.moveToNext() && recentCalls.size < queryLimit)
+            } while (cursor.moveToNext() && recentCalls.size < maxResults)
+        }
+
+        if (!filterBlockedNumbers) {
+            return recentCalls
         }
 
         val blockedNumbers = context.getBlockedNumbers()
-
-        return recentCalls
-            .filter { !context.isNumberBlocked(it.phoneNumber, blockedNumbers) }
+        return recentCalls.filter { !context.isNumberBlocked(it.phoneNumber, blockedNumbers) }
     }
 
-    fun removeRecentCalls(ids: List<Int>, callback: () -> Unit) {
-        ensureBackgroundThread {
-            ids.chunked(30).forEach { chunk ->
-                val selection = "${Calls._ID} IN (${getQuestionMarks(chunk.size)})"
-                val selectionArgs = chunk.map { it.toString() }.toTypedArray()
-                context.contentResolver.delete(contentUri, selection, selectionArgs)
-            }
+    fun removeRecentCalls(activity: SimpleActivity, ids: List<Int>, callback: () -> Unit) {
+        if (ids.isEmpty()) {
             callback()
+            return
+        }
+
+        val privateIds = ids.filter { it < 0 }
+        val systemIds = ids.filter { it > 0 }
+
+        val removePrivateCalls = {
+            if (privateIds.isNotEmpty()) {
+                privateCallHistoryStore.removeCallsByIds(privateIds)
+            }
+        }
+
+        if (systemIds.isEmpty()) {
+            ensureBackgroundThread {
+                removePrivateCalls()
+                callback()
+            }
+            return
+        }
+
+        activity.handlePermission(PERMISSION_WRITE_CALL_LOG) { granted ->
+            ensureBackgroundThread {
+                if (granted) {
+                    removeSystemRecentCallsByIds(systemIds)
+                }
+                removePrivateCalls()
+                callback()
+            }
         }
     }
 
     @SuppressLint("MissingPermission")
     fun removeAllRecentCalls(activity: SimpleActivity, callback: () -> Unit) {
-        activity.handlePermission(PERMISSION_WRITE_CALL_LOG) {
-            if (it) {
-                ensureBackgroundThread {
+        activity.handlePermission(PERMISSION_WRITE_CALL_LOG) { granted ->
+            ensureBackgroundThread {
+                if (granted) {
                     context.contentResolver.delete(contentUri, null, null)
-                    callback()
                 }
+                privateCallHistoryStore.clear()
+                callback()
             }
         }
     }
 
     fun restoreRecentCalls(activity: SimpleActivity, objects: List<RecentCall>, callback: () -> Unit) {
+        val privateCalls = objects.filter { it.isPrivateRecord }
+        val publicCalls = objects.filterNot { it.isPrivateRecord }
+
+        if (publicCalls.isEmpty()) {
+            ensureBackgroundThread {
+                if (privateCalls.isNotEmpty()) {
+                    privateCallHistoryStore.addCalls(privateCalls)
+                }
+                callback()
+            }
+            return
+        }
+
         activity.handlePermission(PERMISSION_WRITE_CALL_LOG) { granted ->
-            if (granted) {
-                ensureBackgroundThread {
-                    val values = objects
+            ensureBackgroundThread {
+                if (granted) {
+                    val values = publicCalls
                         .sortedBy { it.startTS }
                         .map {
                             ContentValues().apply {
@@ -324,9 +449,27 @@ class RecentsHelper(private val context: Context) {
                         }.toTypedArray()
 
                     context.contentResolver.bulkInsert(contentUri, values)
-                    callback()
                 }
+
+                if (privateCalls.isNotEmpty()) {
+                    privateCallHistoryStore.addCalls(privateCalls)
+                }
+
+                callback()
             }
         }
+    }
+
+    private fun removeSystemRecentCallsByIds(ids: List<Int>) {
+        ids.chunked(30).forEach { chunk ->
+            val selection = "${Calls._ID} IN (${getQuestionMarks(chunk.size)})"
+            val selectionArgs = chunk.map { it.toString() }.toTypedArray()
+            context.contentResolver.delete(contentUri, selection, selectionArgs)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun samePhoneNumber(first: String, second: String): Boolean {
+        return PhoneNumberUtils.compare(first, second)
     }
 }

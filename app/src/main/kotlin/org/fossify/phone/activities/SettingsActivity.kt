@@ -9,6 +9,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
+import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FeatureLockedDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.addLockedLabelIfNeeded
@@ -105,6 +106,7 @@ class SettingsActivity : SimpleActivity() {
         setupDefaultTab()
         setupOnContactClick()
         setupDialPadOpen()
+        setupPrivateCallHistoryProtection()
         setupGroupSubsequentCalls()
         setupStartNameWithSurname()
         setupFormatPhoneNumbers()
@@ -115,6 +117,7 @@ class SettingsActivity : SimpleActivity() {
         setupDisableProximitySensor()
         setupDisableSwipeToAnswer()
         setupAlwaysShowFullscreen()
+        setupMigratePrivateCalls()
         setupCallsExport()
         setupCallsImport()
         updateTextColors(binding.settingsHolder)
@@ -293,6 +296,19 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupPrivateCallHistoryProtection() {
+        binding.apply {
+            settingsPrivateCallHistoryProtection.isChecked = config.privateCallHistoryProtectionEnabled
+            settingsPrivateCallHistoryProtectionHolder.setOnClickListener {
+                settingsPrivateCallHistoryProtection.toggle()
+                config.privateCallHistoryProtectionEnabled = settingsPrivateCallHistoryProtection.isChecked
+                if (settingsPrivateCallHistoryProtection.isChecked) {
+                    toast(R.string.private_call_history_protected)
+                }
+            }
+        }
+    }
+
     private fun setupGroupSubsequentCalls() {
         binding.apply {
             settingsGroupSubsequentCalls.isChecked = config.groupSubsequentCalls
@@ -387,6 +403,23 @@ class SettingsActivity : SimpleActivity() {
             settingsAlwaysShowFullscreenHolder.setOnClickListener {
                 settingsAlwaysShowFullscreen.toggle()
                 config.alwaysShowFullscreen = settingsAlwaysShowFullscreen.isChecked
+            }
+        }
+    }
+
+    private fun setupMigratePrivateCalls() {
+        binding.settingsMigratePrivateCallsHolder.setOnClickListener {
+            ConfirmationDialog(this, getString(R.string.migrate_private_calls_confirmation)) {
+                toast(R.string.migrating_private_calls)
+                RecentsHelper(this).migratePrivateCallsToProtectedStorage(this) { protectedCalls ->
+                    runOnUiThread {
+                        if (protectedCalls == 0) {
+                            toast(R.string.no_private_calls_to_migrate)
+                        } else {
+                            toast(getString(R.string.migrate_private_calls_success, protectedCalls))
+                        }
+                    }
+                }
             }
         }
     }

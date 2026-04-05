@@ -42,7 +42,6 @@ import org.fossify.commons.extensions.highlightTextPart
 import org.fossify.commons.extensions.isOrWasThankYouInstalled
 import org.fossify.commons.extensions.launchSendSMSIntent
 import org.fossify.commons.extensions.setupViewBackground
-import org.fossify.commons.helpers.PERMISSION_WRITE_CALL_LOG
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isNougatPlus
@@ -298,9 +297,7 @@ class RecentCallsAdapter(
 
     private fun askConfirmRemove() {
         ConfirmationDialog(activity, activity.getString(R.string.remove_confirmation)) {
-            activity.handlePermission(PERMISSION_WRITE_CALL_LOG) {
-                removeRecents()
-            }
+            removeRecents()
         }
     }
 
@@ -316,7 +313,7 @@ class RecentCallsAdapter(
             it.groupedCalls?.mapTo(idsToRemove) { call -> call.id }
         }
 
-        RecentsHelper(activity).removeRecentCalls(idsToRemove) {
+        RecentsHelper(activity).removeRecentCalls(activity as SimpleActivity, idsToRemove) {
             itemDelete(callsToRemove)
             val recentCalls = currentList.toMutableList().also { it.removeAll(callsToRemove) }
             activity.runOnUiThread {
@@ -669,6 +666,7 @@ class RecentCallsDiffCallback : DiffUtil.ItemCallback<CallLogItem>() {
                         oldItem.specificNumber == newItem.specificNumber &&
                         oldItem.specificType == newItem.specificType &&
                         oldItem.isUnknownNumber == newItem.isUnknownNumber &&
+                        oldItem.isPrivateRecord == newItem.isPrivateRecord &&
                         oldItem.groupedCalls?.size == newItem.groupedCalls?.size
             }
 

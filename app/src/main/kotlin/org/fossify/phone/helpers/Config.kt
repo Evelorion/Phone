@@ -135,4 +135,16 @@ class Config(context: Context) : BaseConfig(context) {
     var alwaysShowFullscreen: Boolean
         get() = prefs.getBoolean(ALWAYS_SHOW_FULLSCREEN, false)
         set(alwaysShowFullscreen) = prefs.edit().putBoolean(ALWAYS_SHOW_FULLSCREEN, alwaysShowFullscreen).apply()
+
+    var privateCallHistoryProtectionEnabled: Boolean
+        get() = prefs.getBoolean(PRIVATE_CALL_HISTORY_PROTECTION, true)
+        set(enabled) = prefs.edit().putBoolean(PRIVATE_CALL_HISTORY_PROTECTION, enabled).apply()
+
+    var privateCallHistoryEntries: String
+        get() = prefs.getString(PRIVATE_CALL_HISTORY_ENTRIES, "") ?: ""
+        set(value) = prefs.edit().putString(PRIVATE_CALL_HISTORY_ENTRIES, value).apply()
+
+    var privateCallHistoryNextId: Int
+        get() = prefs.getInt(PRIVATE_CALL_HISTORY_NEXT_ID, PrivateCallHistoryStore.INITIAL_PRIVATE_CALL_ID)
+        set(value) = prefs.edit().putInt(PRIVATE_CALL_HISTORY_NEXT_ID, value).apply()
 }

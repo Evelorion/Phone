@@ -1,5 +1,7 @@
 package org.fossify.phone.services
 
+import android.os.Handler
+import android.os.Looper
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -14,6 +16,7 @@ import org.fossify.phone.extensions.powerManager
 import org.fossify.phone.helpers.CallManager
 import org.fossify.phone.helpers.CallNotificationManager
 import org.fossify.phone.helpers.NoCall
+import org.fossify.phone.helpers.RecentsHelper
 import org.fossify.phone.models.Events
 import org.greenrobot.eventbus.EventBus
 
@@ -68,6 +71,13 @@ class CallService : InCallService() {
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         call.unregisterCallback(callListener)
+        val recentCallNumber = call.details.handle?.schemeSpecificPart
+        if (!recentCallNumber.isNullOrBlank()) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                RecentsHelper(this).protectPrivateCallHistory(recentCallNumber)
+            }, 2000L)
+        }
+
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
         if (CallManager.getPhoneState() == NoCall) {

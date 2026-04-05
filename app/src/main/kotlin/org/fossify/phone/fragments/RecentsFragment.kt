@@ -247,7 +247,7 @@ class RecentsFragment(
         val ignoredSources = context.baseConfig.ignoredContactSources
         return if (SMT_PRIVATE in ignoredSources) {
             val privateNumbers = privateContacts.flatMap { it.phoneNumbers }.map { it.value }
-            calls.filterNot { it.phoneNumber in privateNumbers }
+            calls.filterNot { it.isPrivateRecord || it.phoneNumber in privateNumbers }
         } else {
             calls
         }

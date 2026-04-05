@@ -296,6 +296,21 @@
                 android:text="@string/calls" />
 
             <RelativeLayout
+                android:id="@+id/settings_private_call_history_protection_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_private_call_history_protection"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/protect_private_call_history" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_group_subsequent_calls_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"
@@ -451,6 +466,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/migrating" />
+
+            <RelativeLayout
+                android:id="@+id/settings_migrate_private_calls_holder"
+                style="@style/SettingsHolderTextViewOneLinerStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyTextView
+                    android:id="@+id/settings_migrate_private_calls"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/migrate_private_calls" />
+
+            </RelativeLayout>
 
             <RelativeLayout
                 android:id="@+id/settings_export_calls_holder"

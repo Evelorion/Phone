@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  通话记录保护相关的文案。单独一个文件，合并上游 Fossify 更新时不会打架。
+-->
+<resources>
+
+    <!-- 设置页入口 -->
+    <string name="call_guard_title">通话记录保护</string>
+    <string name="call_guard_summary">把通话记录从系统里拿走，加密存到本机</string>
+
+    <!-- 这里必须说实话，不能让用户以为是零窗口 -->
+    <string name="call_guard_intro">通话结束时是系统自己往通话记录里写一条，App 拦不住。这个功能做的是「写进去之后尽快删掉」，窗口大约几十毫秒。</string>
+    <string name="call_guard_enable">启用通话记录保护</string>
+
+    <!-- 三档范围 -->
+    <string name="call_guard_scope_title">保护范围</string>
+    <string name="call_guard_scope_private">只保护私密联系人</string>
+    <string name="call_guard_scope_private_desc">其余通话依然留在系统通话记录里，其它 App 可以读到</string>
+    <string name="call_guard_scope_unknown">私密联系人 + 陌生号码（推荐）</string>
+    <string name="call_guard_scope_unknown_desc">通讯录里没存过的号码也一起拿走。系统里只剩普通联系人的通话</string>
+    <string name="call_guard_scope_all">全部通话</string>
+    <string name="call_guard_scope_all_desc">最彻底。代价：车机蓝牙同步通话记录会同步不到东西，部分 ROM 的通话记录小组件会空白，第三方拨号盘会失去历史</string>
+
+    <!-- 加密与存储 -->
+    <string name="call_guard_encryption_title">本机存储</string>
+    <string name="call_guard_encrypted">通话记录数据库已加密</string>
+    <string name="call_guard_not_encrypted">数据库未加密</string>
+    <string name="call_guard_require_screen_lock">读取前需要屏幕锁验证</string>
+    <string name="call_guard_require_screen_lock_desc">打开后，锁屏状态下来电时查不到历史通话</string>
+
+    <!-- 迁移 -->
+    <string name="call_guard_migrate">迁移已有的通话记录</string>
+    <string name="call_guard_migrate_desc">把系统里已经存在的、符合当前保护范围的通话记录搬进加密库</string>
+    <string name="call_guard_migrate_confirm">要把系统通话记录里符合条件的记录搬进本 App 的加密库吗？搬完之后系统里那些记录会被删除，其它 App 就读不到了。</string>
+    <string name="call_guard_migrate_result">已保护 %d 条通话记录</string>
+
+    <!-- 同步 -->
+    <string name="call_guard_sync_title">加密同步</string>
+    <string name="call_guard_sync_now">立即同步</string>
+    <string name="call_guard_sync_never">还没有同步过</string>
+    <string name="call_guard_sync_result">同步完成：拉取 %1$d 条，上传 %2$d 条</string>
+
+    <!-- 权限 -->
+    <string name="call_guard_need_permissions">需要通话记录的读写权限才能启用保护</string>
+    <string name="call_guard_grant">授予权限</string>
+
+    <!-- 残留风险，写在设置页底部 -->
+    <string name="call_guard_caveats">还有几处挡不住：\n• 系统写入到我们删除之间的几十毫秒\n• App 进程被系统杀掉期间的通话，要等下次启动才清理\n• 部分厂商 ROM 有自己的通话记录库，不走标准接口\n• 运营商的通话详单跟本地删不删无关</string>
+
+</resources>

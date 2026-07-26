@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 及以下的备份规则，全量排除。
+
+  Phone 这边原来也是 allowBackup="true"。私密通话历史当时存在
+  shared_prefs 的一个明文 XML 里，adb backup 一条命令就能整个拿走 ——
+  号码、时间、时长全都是可读的。
+
+  现在数据搬到了加密数据库，但备份仍然全关：备份出去的文件不再受
+  signature 权限和 Keystore 保护，等于给通话记录开了后门。
+  换机走服务器同步恢复，那条路是端到端加密的。
+-->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="external" path="." />
+    <exclude domain="root" path="." />
+</full-backup-content>

@@ -17,6 +17,7 @@ import org.fossify.phone.extensions.config
 import org.fossify.phone.extensions.getAvailableSIMCardLabels
 import org.fossify.phone.models.RecentCall
 import org.fossify.phone.models.SIMAccount
+import org.fossify.phone.privatecalls.PrivateCallStore
 
 class RecentsHelper(private val context: Context) {
     companion object {
@@ -27,7 +28,10 @@ class RecentsHelper(private val context: Context) {
     }
 
     private val contentUri = Calls.CONTENT_URI
-    private val privateCallHistoryStore = PrivateCallHistoryStore(context)
+    // 存储换成了加密的 Room 库（PrivateCallStore），对外接口刻意保持一致。
+    // 旧的 PrivateCallHistoryStore 把整个历史塞进 SharedPreferences 的一个 JSON 字符串里，
+    // 那是明文 XML，adb backup 一条命令就能拿走。
+    private val privateCallHistoryStore = PrivateCallStore(context)
 
     @Suppress("UNUSED_PARAMETER")
     fun getRecentCalls(

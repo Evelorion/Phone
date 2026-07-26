@@ -297,16 +297,17 @@
 
             <RelativeLayout
                 android:id="@+id/settings_private_call_history_protection_holder"
-                style="@style/SettingsHolderSwitchStyle"
+                style="@style/SettingsHolderTextViewOneLinerStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <org.fossify.commons.views.MyMaterialSwitch
+                <!-- 原来是开关。保护范围现在有三档，改成跳转到独立设置页。 -->
+                <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_private_call_history_protection"
-                    style="@style/SettingsSwitchStyle"
-                    android:layout_width="match_parent"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/protect_private_call_history" />
+                    android:text="@string/call_guard_title" />
 
             </RelativeLayout>
 

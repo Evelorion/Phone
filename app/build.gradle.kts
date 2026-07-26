@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.ksp)
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -31,6 +32,9 @@ android {
     compileSdk = project.libs.versions.app.build.compileSDKVersion.get().toInt()
 
     defaultConfig {
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
         applicationId = project.property("APP_ID").toString()
         minSdk = project.libs.versions.app.build.minimumSDK.get().toInt()
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
@@ -139,6 +143,15 @@ detekt {
 
 dependencies {
     implementation(libs.fossify.commons)
+
+    // 加密同步与通话记录保护
+    implementation(libs.okhttp)                 // 手写 HTTP 调用
+    implementation(libs.androidx.work.runtime)  // 后台同步调度
+    implementation(libs.sqlcipher)              // 通话记录库加密
+    implementation(libs.androidx.sqlite)
+    implementation(libs.bundles.room)
+    ksp(libs.androidx.room.compiler)
+
     implementation(libs.indicator.fast.scroll)
     implementation(libs.autofit.text.view)
     implementation(libs.kotlinx.serialization.json)

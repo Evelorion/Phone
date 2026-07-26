@@ -19,6 +19,8 @@ import org.fossify.phone.helpers.NoCall
 import org.fossify.phone.helpers.RecentsHelper
 import org.fossify.phone.models.Events
 import org.greenrobot.eventbus.EventBus
+import org.fossify.phone.privatecalls.CallLogGuard
+import org.fossify.commons.helpers.ensureBackgroundThread
 
 class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
@@ -74,7 +76,9 @@ class CallService : InCallService() {
         val recentCallNumber = call.details.handle?.schemeSpecificPart
         if (!recentCallNumber.isNullOrBlank()) {
             Handler(Looper.getMainLooper()).postDelayed({
-                RecentsHelper(this).protectPrivateCallHistory(recentCallNumber)
+                // 主力是 CallLogGuard 的 ContentObserver（写入即回调，窗口几十毫秒）。
+                // 这里是兜底：observer 可能因为进程被杀而漏掉。
+                ensureBackgroundThread { CallLogGuard.get(this).sweep() }
             }, 2000L)
         }
 

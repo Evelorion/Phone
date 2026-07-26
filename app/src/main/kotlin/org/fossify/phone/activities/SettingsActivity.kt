@@ -48,6 +48,8 @@ import org.fossify.phone.helpers.RecentsHelper
 import org.fossify.phone.models.RecentCall
 import java.util.Locale
 import kotlin.system.exitProcess
+import org.fossify.phone.privatecalls.CallGuardSettingsActivity
+import org.fossify.phone.privatecalls.CallLogScope
 
 class SettingsActivity : SimpleActivity() {
     companion object {
@@ -296,15 +298,22 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    /**
+     * 通话记录保护。
+     *
+     * 原来是一个开关，现在保护范围有三档（只私密联系人 / 加陌生号码 / 全部），
+     * 一个开关表达不了，所以改成跳转到独立页面。
+     */
     private fun setupPrivateCallHistoryProtection() {
-        binding.apply {
-            settingsPrivateCallHistoryProtection.isChecked = config.privateCallHistoryProtectionEnabled
-            settingsPrivateCallHistoryProtectionHolder.setOnClickListener {
-                settingsPrivateCallHistoryProtection.toggle()
-                config.privateCallHistoryProtectionEnabled = settingsPrivateCallHistoryProtection.isChecked
-                if (settingsPrivateCallHistoryProtection.isChecked) {
-                    toast(R.string.private_call_history_protected)
-                }
+        binding.settingsPrivateCallHistoryProtectionHolder.setOnClickListener {
+            startActivity(Intent(this, CallGuardSettingsActivity::class.java))
+        }
+        binding.settingsPrivateCallHistoryProtection.text = when {
+            !CallLogScope.isEnabled(this) -> getString(R.string.call_guard_title)
+            else -> getString(R.string.call_guard_title) + " · " + when (CallLogScope.current(this)) {
+                CallLogScope.PRIVATE_ONLY -> "只私密联系人"
+                CallLogScope.PRIVATE_AND_UNKNOWN -> "私密 + 陌生号码"
+                CallLogScope.ALL -> "全部通话"
             }
         }
     }

@@ -21,3 +21,9 @@
     public static <1> INSTANCE;
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+
+# ---------------- 通话记录保护与加密同步 ----------------
+-keep class org.fossify.phone.privatecalls.** { *; }
+-keep class net.zetetic.database.** { *; }
+-keep class net.sqlcipher.** { *; }

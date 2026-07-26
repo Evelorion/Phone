@@ -13,6 +13,7 @@ import org.fossify.phone.extensions.putPhoneAccountHandle
 import org.fossify.phone.models.SpeedDial
 import androidx.core.content.edit
 import java.util.Locale
+import org.fossify.phone.privatecalls.PrivateCallStore
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
@@ -145,6 +146,6 @@ class Config(context: Context) : BaseConfig(context) {
         set(value) = prefs.edit().putString(PRIVATE_CALL_HISTORY_ENTRIES, value).apply()
 
     var privateCallHistoryNextId: Int
-        get() = prefs.getInt(PRIVATE_CALL_HISTORY_NEXT_ID, PrivateCallHistoryStore.INITIAL_PRIVATE_CALL_ID)
+        get() = prefs.getInt(PRIVATE_CALL_HISTORY_NEXT_ID, PrivateCallStore.INITIAL_PRIVATE_CALL_ID)
         set(value) = prefs.edit().putInt(PRIVATE_CALL_HISTORY_NEXT_ID, value).apply()
 }

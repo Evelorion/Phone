@@ -4,6 +4,11 @@
     android:installLocation="auto">
 
     <uses-permission android:name="org.fossify.permission.READ_PRIVATE_CONTACTS" />
+    <!-- 向通讯录索取受限的同步凭据（calls 子密钥 + 短期访问令牌）。
+         权限在通讯录的 manifest 里声明，所以必须先装通讯录再装本 App。 -->
+    <uses-permission android:name="org.fossify.permission.VAULT_BRIDGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -39,8 +44,10 @@
     </queries>
 
     <application
-        android:name="org.fossify.commons.FossifyApp"
-        android:allowBackup="true"
+        android:name=".PhoneApp"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:appCategory="productivity"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_launcher_name"
@@ -63,6 +70,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".privatecalls.CallGuardSettingsActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/call_guard_title"
+            android:parentActivityName=".activities.SettingsActivity" />
 
         <activity
             android:name="org.fossify.commons.activities.AboutActivity"

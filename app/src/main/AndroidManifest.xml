@@ -3,9 +3,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
+    <!-- 这两个权限**两个 App 都声明**，这样安装顺序就无所谓了。
+         自定义权限的规则是：请求时如果没有任何已装应用定义过它，请求会被静默丢弃，
+         而且之后定义方装上也不会自动补授予。两边都声明就没有这个问题 ——
+         谁先装谁定义，另一个装上就能拿到。
+
+         Android 允许两个包声明同名权限的前提是**签名相同**，
+         签名不同会直接 INSTALL_FAILED_DUPLICATE_PERMISSION。
+         这反而是好事：签名不一致会在安装时就报错，
+         而不是装完之后才发现读不到数据、还查不出原因。
+
+         两处声明必须逐字一致（name / protectionLevel），否则以先装的那个为准。 -->
+    <permission
+        android:name="org.fossify.permission.READ_PRIVATE_CONTACTS"
+        android:description="@string/privacy_permission_description"
+        android:label="@string/privacy_permission_label"
+        android:protectionLevel="signature" />
+
+    <permission
+        android:name="org.fossify.permission.VAULT_BRIDGE"
+        android:description="@string/vault_bridge_permission_description"
+        android:label="@string/vault_bridge_permission_label"
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="org.fossify.permission.READ_PRIVATE_CONTACTS" />
-    <!-- 向通讯录索取受限的同步凭据（calls 子密钥 + 短期访问令牌）。
-         权限在通讯录的 manifest 里声明，所以必须先装通讯录再装本 App。 -->
     <uses-permission android:name="org.fossify.permission.VAULT_BRIDGE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

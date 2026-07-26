@@ -47,4 +47,13 @@
     <!-- 残留风险，写在设置页底部 -->
     <string name="call_guard_caveats">还有几处挡不住：\n• 系统写入到我们删除之间的几十毫秒\n• App 进程被系统杀掉期间的通话，要等下次启动才清理\n• 部分厂商 ROM 有自己的通话记录库，不走标准接口\n• 运营商的通话详单跟本地删不删无关</string>
 
+
+    <!-- 权限文案。这两个权限两个 App 都声明（为了消除安装顺序限制），
+         所以两边都要有这几条字符串，而且**内容应当一致** ——
+         它们会显示在系统的权限详情页里。 -->
+    <string name="privacy_permission_label">读取私密联系人</string>
+    <string name="privacy_permission_description">允许同一开发者签名的应用读取本机的私密联系人</string>
+    <string name="vault_bridge_permission_label">读取同步凭据</string>
+    <string name="vault_bridge_permission_description">允许同一开发者签名的应用取得受限的同步密钥，用于加密自己的数据</string>
+
 </resources>
